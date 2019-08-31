@@ -1,0 +1,8 @@
+{
+	"tomcat": [
+		["/etc/tomcat8/logging.properties", "org.apache.catalina.core.ContainerBase.[Catalina].[localhost].level", "#", "=", "Nivel de log del tomcat", "INFO"]
+	],
+	"nginx": [
+		["/etc/nginx/nginx.conf", "server_tokens", "#", " ", "¿Todos los servers tienen el token oculto?", "off"]
+	]
+}

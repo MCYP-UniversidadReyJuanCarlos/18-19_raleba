@@ -1,0 +1,39 @@
+{
+	"authentication":{
+		"min_days_password": 2,
+		"max_days_change_password": 45,
+		"warn_days_password": 7,
+		"num_days_inactive_min": 30,
+		"num_days_inactive_max": 90,
+		"min_length_password": 12,
+		"num_days_avoid_use_same_password": 7},
+
+	"local_access":{
+		"account_lock_threshold_min": 5,
+		"account_lock_threshold_max": 8,
+		"unlock_time": 1800},
+
+	"remote_access":{
+		"protocol_for_ssh": "2"},
+
+	"logs":{
+		"relative_name": {
+			"kern.log": "Log del kernel",
+			"auth.log": "Log de login en el sistema",
+			"sys.log": "Log del sistema",
+			"boot.log": "Log de arranque del sistema",
+			"secure": "Log de autenticación y privilegios",
+			"wtmp": "Log de conexión y desconexión de usuarios"},
+		"default_path": {
+			"kern.log": "/var/log/",
+			"auth.log": "/var/log/",
+			"sys.log": "/var/log/",
+			"boot.log": "/var/log/",
+			"secure": "/var/log/",
+			"wtmp": "/var/log/"}
+	},
+
+	"firewalls": ["iptables", "ufw"],
+
+	"antivirus": ["clamav", "clamtk", "sophos", "comodo", "fprot"]
+}
