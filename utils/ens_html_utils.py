@@ -6,6 +6,18 @@ from ens_analysis.ens_extra_data import OpenPortsInformation, ServicesOnBoot
 
 
 def full_html(html, score_str, nombre_usuario, nombre_organizacion, lvl_security):
+    """Generate html with ens result
+
+    Args:
+        html (str): html from ens_analysis
+        score_str (str): total score
+        nombre_usuario: username
+        nombre_organizacion: organization name's
+        lvl_security: security level
+
+    Returns:
+        str: return html content
+    """
     print_message('ok', 'Generando fichero HTML.')
     full_html = """
         <!DOCTYPE html>
@@ -146,6 +158,16 @@ def full_html(html, score_str, nombre_usuario, nombre_organizacion, lvl_security
 
 
 def get_header(company, user, security_lvl):
+    """Generate html with ens result
+
+    Args:
+        company (str): company name
+        user (str): username
+        security_lvl: security level
+
+    Returns:
+        str: return html header
+    """
     system_name = execute_command('hostname')
     html = """
         <div style="width: 100%; display: table;">

@@ -4,7 +4,7 @@ import os
 from subprocess import Popen, PIPE
 
 from ens_analysis.ens_base import BaseModel
-from utils.ens_utils import check_if_process_is_active, get_config_from_file, read_file, execute_command, print_message
+from utils.ens_utils import check_if_process_is_active, get_config_from_file, read_file, execute_command, print_message, get_system_name
 
 
 default_logs = {
@@ -163,15 +163,27 @@ class ChangeManagement(BaseModel):
 
     def __get_num_updates(self):
         self.package_updates = self.security_updates = 0
-        command = Popen(["/usr/lib/update-notifier/apt-check"],
-                        stdout=PIPE, stderr=PIPE)
-        out, err = command.communicate()
-        if err:
-            if isinstance(err, bytes):
-                err = err.decode('utf-8')
-            updates = err.split(';')
-            self.package_updates = updates[0]
-            self.security_updates = updates[1]
+        os_name = get_system_name()
+        if 'red hat' in os_name:
+            package_updates = execute_command('yum list updates | wc -l')
+            if 'ERROR' in package_updates:
+                self.package_updates = 0
+            else:
+                self.package_updates = package_updates
+            security_updates = execute_command('yum list security | wc -l')
+            if 'ERROR' in security_updates:
+                self.security_updates = 0
+            else:
+                self.security_updates = security_updates
+        else:
+            command = Popen(["/usr/lib/update-notifier/apt-check"], stdout=PIPE, stderr=PIPE)
+            out, err = command.communicate()
+            if err:
+                if isinstance(err, bytes):
+                    err = err.decode('utf-8')
+                updates = err.split(';')
+                self.package_updates = updates[0]
+                self.security_updates = updates[1]
 
     def _parse_content_updates(self):
         self.__get_num_updates()

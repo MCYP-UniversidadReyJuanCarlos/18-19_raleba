@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-import os
-
 from ens_analysis.ens_base import BaseModel
-from utils.ens_utils import get_config_from_file, get_pam_config, execute_command, check_if_package_installed, print_message
+from utils.ens_utils import get_config_from_file, get_pam_config, execute_command, print_message, get_real_path_pam_password, read_file
 
 
 class AccessRightsManagement(BaseModel):
@@ -59,7 +57,7 @@ class AuthenticationMechanisms(BaseModel):
 
     def _load_system_config_file(self):
         self.config_file = get_config_from_file('/etc/login.defs', '#')
-        self.pam_commom_password_config = get_pam_config('/etc/pam.d/common-password', '#')
+        self.pam_commom_password_config = get_pam_config(get_real_path_pam_password(), '#')
 
     def _get_pass_min_days(self):
         # Días como mínimo para cambiar la contraseña
@@ -210,17 +208,14 @@ class AuthenticationMechanisms(BaseModel):
     def _check_FIPS(self):
         # Uso de FIPS
         is_fips_enabled = False
-        is_fips_installed = check_if_package_installed('linux-fips')
-        if is_fips_installed:
-            if os.path.exists('/proc/sys/crypto/fips_enabled'):
-                file = open('/proc/sys/crypto/fips_enabled', 'r')
-                content = file.read()
-                if '1' in content:
-                    is_fips_enabled = True
+        fips_file = read_file('/proc/sys/crypto/fips_enabled')
+        if fips_file and '1' in fips_file:
+            is_fips_enabled = True
         result = 'Correcto' if is_fips_enabled else 'Incorrecto'
+        description = 'FIPS debería de estar activado.'
         self.entries_to_display.append(
             ['Criptografía de sistema: usar algoritmos que cumplan FIPS para cifrado, firma y operaciones hash',
-                'Sí' if is_fips_enabled else 'No', result])
+                'Sí' if is_fips_enabled else 'No', result, description])
 
     def get_params(self):
         print_message('ok', 'Analizando los mecanismos de autenticación.')

@@ -8,6 +8,8 @@ level_parser = {
     'bajo': 1,
 }
 
+system = 'ubuntu'
+
 
 class BaseModel:
 

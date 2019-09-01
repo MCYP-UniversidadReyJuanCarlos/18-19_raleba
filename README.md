@@ -32,13 +32,12 @@ sudo python3 ens.py "nombre_usuario" "empresa"  # Nombre del usuario y empresa, 
 ## Documentación de desarrollo
 
 La documentación del desarrollo, puede ser consultada en el PDF que se encuentra en el proyecto, más específicamente en la parte de Anexos.
-[Documentación]()
 
 ## Arquitectura
 
-Python 2.7.14 / 3.x
-weasyprint 48
-beautifulsoup4 4.8.0
+- Python 2.7.14 / 3.x
+- weasyprint 48
+- beautifulsoup4 4.8.0
 
 ## Preparación del entorno
 

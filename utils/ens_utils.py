@@ -12,6 +12,12 @@ ENDC = '\033[0m'
 
 
 def print_message(code, message):
+    """Show message in terminal with a color which it depends of code value.
+
+    Args:
+        code (str): Code for color message.
+        message (str): Message to show in terminal.
+    """
     code_str = OKGREEN if code == 'ok' else WARNING
     type_code = '[Info]' if code == 'ok' else '[Warning]'
     base_message = datetime.now().strftime("%d/%m/%Y %H:%M:%S") + ' - ' + code_str + type_code + ENDC
@@ -19,6 +25,14 @@ def print_message(code, message):
 
 
 def read_file(path):
+    """Check if path exists and returns content.
+
+    Args:
+        path (str): Path file.
+
+    Returns:
+        str: File content if exists if not empy string.
+    """
     content = ""
     if os.path.exists(path):
         file = open(path, 'r')
@@ -29,6 +43,14 @@ def read_file(path):
 
 
 def execute_command(command):
+    """Execute command using subprocess and with param shell to True.
+
+    Args:
+        command (str): Command to execute with subprocess.
+
+    Returns:
+        str: Command response in utf-8 format.
+    """
     response_splitted = ''
     response_command = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
     response_command = response_command.stdout.read()
@@ -38,19 +60,46 @@ def execute_command(command):
 
 
 def check_if_linux_system():
+    """Check if system is linux.
+
+    Returns:
+        boolean: True if system is linux system if not False.
+    """
     return True if platform in ["linux", "linux2"] else False
 
 
 def check_if_is_root():
+    """Check if app is executed with sudo perms.
+
+    Returns:
+        boolean: True if uid is 0 if not False.
+    """
     return True if os.getuid() == 0 else False
 
 
 def check_if_package_installed(package):
+    """Check if a package is installed in the system.
+
+    Args:
+        package (str): package name.
+
+    Returns:
+        boolean: True if package in system if not False.
+
+    """
     call_result = execute_command("which " + package)
     return True if call_result else False
 
 
 def check_if_process_is_active(process):
+    """Check if a process is active
+
+    Args:
+        process (str): process name.
+
+    Returns:
+        boolean: True if service is running if not False.
+    """
     command = Popen(["service", str(process), "status"],
                     stdout=PIPE, stderr=PIPE)
     out, err = command.communicate()
@@ -60,10 +109,14 @@ def check_if_process_is_active(process):
         return False
 
 
-def get_list_services_starts_on_boot():
-    command = 'systemctl list-units --type service'
-    response_command = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True).stdout.read()
-    response_splitted = response_command.decode('utf-8').split('\n')
+def get_list_services_start_on_boot():
+    """Return list of tuples with info about services start on boot
+
+    Returns:
+        list: list of tuples. Each tuple contains service name and it description.
+    """
+    response_command = execute_command('systemctl list-units --type service')
+    response_splitted = response_command.splitlines()
     list_process_to_show = []
     for line in response_splitted:
         info = line.split()
@@ -75,9 +128,13 @@ def get_list_services_starts_on_boot():
 
 
 def get_list_open_ports():
-    command = 'netstat -lntu'
-    response_command = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True).stdout.read()
-    response_splitted = response_command.decode('utf-8').split('\n')
+    """Return list of tuples with info about open ports
+
+    Returns:
+        list: list of tuples. Each tuple contains info about protocol, ip and port.
+    """
+    response_command = execute_command('netstat -lntu')
+    response_splitted = response_command.split('\n')
     list_connections = []
     for line in response_splitted:
         info = line.split()
@@ -91,6 +148,17 @@ def get_list_open_ports():
 
 
 def get_config_from_file(path_file_to_check, ignore_lines_start_with, return_full_content=False):
+    """Return dict with content file parsed. It Works for files with key value
+
+        Args:
+            path_file_to_check (str): path file.
+            ignore_lines_start_with (str): string to avoid add lines start with this value.
+            return full_content (boolean): boolen to return full content without lines start with ignore_lines_start_with value.
+
+        Returns:
+            str: content file without lines start with ignore_lines_start_with value.
+            dict: content parsed with key value from file.
+    """
     config = dict()
     content = read_file(path_file_to_check).splitlines()
     config_lines = [text for text in content if text and not text.startswith(ignore_lines_start_with)]
@@ -105,6 +173,15 @@ def get_config_from_file(path_file_to_check, ignore_lines_start_with, return_ful
 
 
 def get_pam_config(path_file_to_check, ignore_lines_start_with):
+    """Return dict with content file parsed. It Works for files with key value. Value is a list.
+
+    Args:
+        path_file_to_check (str): path file.
+        ignore_lines_start_with (str): string to avoid add lines start with this value.
+
+    Returns:
+        dict: content parsed with key value (list) from file.
+    """
     pam_file = {}
     content = read_file(path_file_to_check).splitlines()
     config_lines = [text.strip() for text in content if text and not text.strip().startswith(ignore_lines_start_with)]
@@ -122,6 +199,14 @@ def get_pam_config(path_file_to_check, ignore_lines_start_with):
 
 
 def check_extra_config(json_file_config):
+    """Read content from json file and generate list which contains result of parsing the file
+
+    Args:
+        json_file_config (str): path file.
+
+    Returns:
+        list: list of tuples. Each tuple contains info about name from json file and its result
+    """
     import json
 
     if not os.path.exists(json_file_config):
@@ -172,6 +257,14 @@ def check_extra_config(json_file_config):
 
 
 def generate_pdf(html):
+    """Write a pdf file from html with name resultado_ens.pdf
+
+    Args:
+        html (str): html content
+
+    Raises:
+        ImportError if weasyprint is not installed
+    """
     try:
         from weasyprint import HTML, CSS
         print_message('ok', 'Generando PDF')
@@ -251,3 +344,31 @@ def generate_pdf(html):
         print_message('ok', 'Fichero PDF generado')
     except ImportError:
         print_message('error', 'WeasyPrint no instalado, no se puede generar el documento PDF')
+
+
+def get_system_name():
+    """Get name from operative system reading os-release file
+
+    Returns:
+        str: name operative system
+    """
+    os_version = 'ubuntu'
+    os_config = read_file('/etc/os-release')
+    for line in os_config:
+        if line.startswith('NAME'):
+            os_version = line.split('=')[1].lower()
+            break
+    return os_version
+
+
+def get_real_path_pam_password():
+    """Get path from pam password which it depends from operative system
+
+    Returns:
+        str: pam.d path for common-password
+    """
+    path = '/etc/pam.d/common-password'
+    if 'red hat' in get_system_name():
+        path = '/etc/pam.d/system-auth'
+        print_message('ok', 'Sistema Red Hat detectado. Consultando /etc/pam.d/system-auth')
+    return path

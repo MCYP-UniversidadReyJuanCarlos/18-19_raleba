@@ -56,12 +56,6 @@ class SystemInfo(BaseModel):
         html += """</tbody></table></div></div></div>"""
         return html
 
-    def processor_info(self):
-        pass
-
-    def get_html_processor_info(self):
-        pass
-
     def system_info(self):
         system_info = {}
         command = 'lsb_release -a'

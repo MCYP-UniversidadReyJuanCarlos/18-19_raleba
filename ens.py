@@ -12,6 +12,8 @@ from ens_analysis.ens_extra_data import ExtraConfigJson
 from utils.ens_utils import check_if_linux_system, check_if_is_root, generate_pdf
 from utils.ens_html_utils import full_html
 
+system = 'a'
+
 
 def check_arguments(seguridad=None, configuracion_base=None, configuracion_externa=None):
     if seguridad and seguridad not in ['alto', 'medio', 'bajo']:
@@ -39,6 +41,9 @@ def ENS(nombre_usuario, nombre_organizacion, nombre_fichero=None, nivel_segurida
     html = ""
     score = Decimal(0)
     initial_time = datetime.now()
+
+    from ens_analysis.ens_base import system
+    system = 'test'
 
     if not nombre_fichero:
         nombre_fichero = 'resultado_ens.html'
