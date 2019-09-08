@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import os
 import subprocess
 
@@ -37,6 +38,7 @@ def read_file(path):
     if os.path.exists(path):
         file = open(path, 'r')
         content = file.read()
+        file.close()
     else:
         print_message('warning', 'Fichero {0} no encontrado'.format(path))
     return content
@@ -147,44 +149,44 @@ def get_list_open_ports():
     return list_connections
 
 
-def get_config_from_file(path_file_to_check, ignore_lines_start_with, return_full_content=False):
+def get_config_from_file(file_path_to_check, ignore_lines_start_with_character, return_full_content=False):
     """Return dict with content file parsed. It Works for files with key value
 
         Args:
-            path_file_to_check (str): path file.
-            ignore_lines_start_with (str): string to avoid add lines start with this value.
+            file_path_to_check (str): path file.
+            ignore_lines_start_with_character (str): string to avoid add lines start with this value.
             return full_content (boolean): boolen to return full content without lines start with ignore_lines_start_with value.
 
         Returns:
             str: content file without lines start with ignore_lines_start_with value.
             dict: content parsed with key value from file.
     """
-    config = dict()
-    content = read_file(path_file_to_check).splitlines()
-    config_lines = [text for text in content if text and not text.startswith(ignore_lines_start_with)]
+    config = {}
+    content = read_file(file_path_to_check).splitlines()
+    config_lines = [text for text in content if text and not text.strip().startswith(ignore_lines_start_with_character)]
     if return_full_content:
         return config_lines
     for line in config_lines:
         line = line.replace("\t", " ")
-        params = line.split(" ")
+        params = line.split()
         if params:
             config[params[0]] = ''.join(params[1:])
     return config
 
 
-def get_pam_config(path_file_to_check, ignore_lines_start_with):
+def get_pam_config(file_path_to_check, ignore_lines_start_with_character):
     """Return dict with content file parsed. It Works for files with key value. Value is a list.
 
     Args:
-        path_file_to_check (str): path file.
-        ignore_lines_start_with (str): string to avoid add lines start with this value.
+        file_path_to_check (str): path file.
+        ignore_lines_start_with_character (str): string to avoid add lines start with this value.
 
     Returns:
         dict: content parsed with key value (list) from file.
     """
     pam_file = {}
-    content = read_file(path_file_to_check).splitlines()
-    config_lines = [text.strip() for text in content if text and not text.strip().startswith(ignore_lines_start_with)]
+    content = read_file(file_path_to_check).splitlines()
+    config_lines = [text for text in content if text and not text.strip().startswith(ignore_lines_start_with_character)]
     for line in config_lines:
         line = line.replace("\t", " ")
         params = line.split()
@@ -207,8 +209,6 @@ def check_extra_config(json_file_config):
     Returns:
         list: list of tuples. Each tuple contains info about name from json file and its result
     """
-    import json
-
     if not os.path.exists(json_file_config):
         print_message('warning', 'Fichero json no encontrado {0}'.format(json_file_config))
         return []
@@ -271,76 +271,83 @@ def generate_pdf(html):
         html = html.replace('collapse', '')
         css = "@page {size: Letter; margin: 0in 0.44in 0.2in 0.44in; font-size:10px !important}"
         css1 = """
-        th {
-                        font-weight: inherit;
-                    }
-                    .panel-heading {
-                        background-color: #7BA7C7 !important;
-                    }
-                    table {
-                        border-collapse: separate;
-                        white-space: normal;
-                        line-height: normal;
-                        font-size: medium;
-                        border-spacing: 2px;
-                    }
-                    .title_a {
-                        padding-left: 2px;
-                        font-weight: bold;
-                        color: white !important;
-                        font-family: TAHOMA;
-                        font-size: 14px;
-                    }
-                    .panel-body {
-                        padding-left: 16px;
-                        padding-right: 00px;
-                        font-size: 11pt;
-                        margin-bottom: -1px;
-                        color: #000000;
-                        padding-top: 4px;
-                        font-family: Tahoma;
-                        position: relative;
-                        word-wrap: break-word;
-                        box-sizing: border-box;
-                    }
-                    thead > tr{
-                        height: 35px;
-                        color: #4169E1;
-                        text-align: left;
-                        font-weight: bold;
-                    }
-                    tbody > tr > th{
-                        font-size: 14px;
-                        font-weight: 400;
-                        height: 18px;
-                        line-height: normal;
-                        vertical-align: top;
-                    }
-                    .div_title_top{
-                        BORDER-RIGHT: #bbbbbb 1px solid;
-                        PADDING-RIGHT: 5em;
-                        BORDER-TOP: #bbbbbb 1px solid;
-                        DISPLAY: block;
-                        PADDING-LEFT: 8px;
-                        FONT-WEIGHT: bold;
-                        FONT-SIZE: 12pt;
-                        MARGIN-BOTTOM: -1px;
-                        MARGIN-LEFT: 0px;
-                        BORDER-LEFT: #bbbbbb 1px solid;
-                        margin-right: 0px;
-                        CURSOR: hand;
-                        COLOR: #FFFFFF;
-                        MARGIN-RIGHT: 0px;
-                        PADDING-TOP: 4px;
-                        BORDER-BOTTOM: #bbbbbb 1px solid;
-                        FONT-FAMILY: Tahoma;
-                        POSITION: relative;
-                        HEIGHT: 2.25em;
-                        background-color: #4169E1 !important;
-                        border-radius: 4px;
-                    }
+            th {
+                font-weight: inherit;
+            }
+            .panel-heading {
+                background-color: #7BA7C7 !important;
+            }
+            table {
+                border-collapse: separate;
+                white-space: normal;
+                line-height: normal;
+                font-size: medium;
+                border-spacing: 2px;
+            }
+            .title_a {
+                padding-left: 2px;
+                font-weight: bold;
+                color: white !important;
+                font-family: TAHOMA;
+                font-size: 14px;
+            }
+            .panel-body {
+                padding-left: 16px;
+                padding-right: 00px;
+                font-size: 11pt;
+                margin-bottom: -1px;
+                color: #000000;
+                padding-top: 4px;
+                font-family: Tahoma;
+                position: relative;
+                word-wrap: break-word;
+                box-sizing: border-box;
+            }
+            thead > tr{
+                height: 35px;
+                color: #4169E1;
+                text-align: left;
+                font-weight: bold;
+            }
+            tbody > tr > th{
+                font-size: 14px;
+                font-weight: 400;
+                height: 18px;
+                line-height: normal;
+                vertical-align: top;
+            }
+            .div_title_top{
+                BORDER-RIGHT: #bbbbbb 1px solid;
+                PADDING-RIGHT: 5em;
+                BORDER-TOP: #bbbbbb 1px solid;
+                DISPLAY: block;
+                PADDING-LEFT: 8px;
+                FONT-WEIGHT: bold;
+                FONT-SIZE: 12pt;
+                MARGIN-BOTTOM: -1px;
+                MARGIN-LEFT: 0px;
+                BORDER-LEFT: #bbbbbb 1px solid;
+                margin-right: 0px;
+                CURSOR: hand;
+                COLOR: #FFFFFF;
+                MARGIN-RIGHT: 0px;
+                PADDING-TOP: 4px;
+                BORDER-BOTTOM: #bbbbbb 1px solid;
+                FONT-FAMILY: Tahoma;
+                POSITION: relative;
+                HEIGHT: 2.25em;
+                background-color: #4169E1 !important;
+                border-radius: 4px;
+            }
+            .color-red{
+                color: red !important;
+            }
+            .color-green{
+                color: green !important;
+            }
         """
-        HTML(string=html).write_pdf('resultado_ens.pdf', stylesheets=[CSS('statics/css/bootstrap.min.css'), CSS(string=css), CSS(string=css1)])
+        statics_path = os.path.dirname(os.path.realpath(__file__)) + '/../'
+        HTML(string=html, base_url=statics_path).write_pdf('resultado_ens.pdf', stylesheets=[CSS(filename='statics/css/bootstrap.min.css'), CSS(string=css), CSS(string=css1)])
         print_message('ok', 'Fichero PDF generado')
     except ImportError:
         print_message('error', 'WeasyPrint no instalado, no se puede generar el documento PDF')
@@ -353,22 +360,9 @@ def get_system_name():
         str: name operative system
     """
     os_version = 'ubuntu'
-    os_config = read_file('/etc/os-release')
+    os_config = read_file('/etc/os-release').splitlines()
     for line in os_config:
         if line.startswith('NAME'):
             os_version = line.split('=')[1].lower()
             break
     return os_version
-
-
-def get_real_path_pam_password():
-    """Get path from pam password which it depends from operative system
-
-    Returns:
-        str: pam.d path for common-password
-    """
-    path = '/etc/pam.d/common-password'
-    if 'red hat' in get_system_name():
-        path = '/etc/pam.d/system-auth'
-        print_message('ok', 'Sistema Red Hat detectado. Consultando /etc/pam.d/system-auth')
-    return path

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-import os
-
 import argparse
+import os
+import sys
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -11,8 +12,6 @@ from ens_analysis.ens_mp import *
 from ens_analysis.ens_extra_data import ExtraConfigJson
 from utils.ens_utils import check_if_linux_system, check_if_is_root, generate_pdf
 from utils.ens_html_utils import full_html
-
-system = 'a'
 
 
 def check_arguments(seguridad=None, configuracion_base=None, configuracion_externa=None):
@@ -42,11 +41,10 @@ def ENS(nombre_usuario, nombre_organizacion, nombre_fichero=None, nivel_segurida
     score = Decimal(0)
     initial_time = datetime.now()
 
-    from ens_analysis.ens_base import system
-    system = 'test'
-
     if not nombre_fichero:
         nombre_fichero = 'resultado_ens.html'
+    if not nivel_seguridad:
+        nivel_seguridad = 'alto'
 
     list_classes_to_check = [
         AccessRightsManagement,
@@ -63,18 +61,30 @@ def ENS(nombre_usuario, nombre_organizacion, nombre_fichero=None, nivel_segurida
     ]
 
     lvl_security_list = []
+    total_entries = entries_validated = 0
     for each_class in list_classes_to_check:
         instance = each_class(nivel=nivel_seguridad, configuracion_base=configuracion_base)
         lvl_security_list.append(instance.max_lvl_security)
         if isinstance(instance, RegisterActivityLogs):
             html += instance.get_html_exp8()
-            score += Decimal(instance.get_results(instance.params_logs)[0])
+            results = instance.get_results(instance.params_logs)
+            if results:
+                total_entries += results[1]
+                entries_validated += results[2]
+                score += Decimal(results[0])
             html += instance.get_html_exp10()
-            score += Decimal(instance.get_results(instance.log_permissions_parsed)[0])
+            results = instance.get_results(instance.log_permissions_parsed)
+            if results:
+                total_entries += results[1]
+                entries_validated += results[2]
+                score += Decimal(results[0])
         else:
-            score += Decimal(instance.get_results()[0])
+            results = instance.get_results()
+            if results:
+                total_entries += results[1]
+                entries_validated += results[2]
+                score += Decimal(results[0])
             html += instance.get_html()
-
     if configuracion_externa:
         instance = ExtraConfigJson(configuracion_externa)
         html += instance.get_html()
@@ -86,16 +96,19 @@ def ENS(nombre_usuario, nombre_organizacion, nombre_fichero=None, nivel_segurida
         lvl_security = 'Medio'
 
     html_file = open(nombre_fichero, 'w')
-    score_str = '{0:.2f}'.format(score / len(list_classes_to_check))
-
-    html = full_html(html, score_str, nombre_usuario, nombre_organizacion, lvl_security)
+    score_str = '{0:.2f}'.format((entries_validated * 100) / Decimal(total_entries))  # Decimal to force decimal values. Python 2 return int without Decimal
+    html = full_html(html, score_str, nombre_usuario, nombre_organizacion, nivel_seguridad, lvl_security)
     try:
         import bs4
         soup = bs4.BeautifulSoup(html, features="html5lib")
         html = soup.prettify()
     except ImportError:
         print_message('warning', 'BeautifulSoup no está instalado.\nEl html generado no está parseado. En caso de generar un documento PDF, es posible que el documento generado no contenga el HTML completo.')
-    html_file.write(html)
+
+    html_to_write = html
+    if sys.version_info[0] < 3:
+        html_to_write = html.encode('utf-8')
+    html_file.write(html_to_write)
     html_file.close()
 
     if pdf:

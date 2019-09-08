@@ -8,8 +8,6 @@ level_parser = {
     'bajo': 1,
 }
 
-system = 'ubuntu'
-
 
 class BaseModel:
 
@@ -39,10 +37,13 @@ class BaseModel:
                         self.max_lvl_security = 'Alto'
 
     def get_results(self, entries=None):
+        entries_to_check = []
         if entries:
             entries_to_check = entries
-        else:
+        elif not entries and hasattr(self, 'entries_to_display'):
             entries_to_check = self.entries_to_display
+        if not entries_to_check:
+            return ''
         total_configs_validated = 0
         total_configs = len(entries_to_check)
         if total_configs:
@@ -61,6 +62,8 @@ class BaseModel:
             title = self.title
         if not entries:
             entries = self.entries_to_display
+        if not entries:
+            return ""
         percentage_calculated, total_items, total_items_validated = self.get_results(entries)
         if percentage:
             percentage_calculated = percentage
@@ -92,18 +95,20 @@ class BaseModel:
                     <tbody>
         """.format(title_replaced, title, percentage_calculated, total_items_validated, total_items)
         for entry in entries:
-            color = '#FF0000'
+            color = 'red'
+            class_css = 'color-red'
             if entry[2] == 'Correcto':
-                color = '#008000'
+                color = 'green'
+                class_css = 'color-green'
             html += """
                 <tr><th style='padding-right: 10px; vertical-align: top; text-align: justify'>
                     <strong>{0}</strong>
-                </th><th style='padding-right: 10px; vertical-align: top; color: {1} !important'>
+                </th><th class="{4}" style='padding-right: 10px; vertical-align: top; color: {1} !important'>
                     {2}
-                </th><th style='vertical-align: top; color: {1} !important'>
+                </th><th class="{4}" style='vertical-align: top; color: {1} !important'>
                     {3}
                 </th></tr>
-            """.format(entry[0], color, entry[1], entry[2])
+            """.format(entry[0], color, entry[1], entry[2], class_css)
             if len(entry) == 4 and entry[3]:
                 html += """<tr><th style="font-style: oblique; padding-left: 3em; padding-right: 3em; text-align: justify;">    {0}<th></tr>""".format(entry[3])
         html += """</tbody></table></div></div></div></div>"""

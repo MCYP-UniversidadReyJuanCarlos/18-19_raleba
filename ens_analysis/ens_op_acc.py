@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from ens_analysis.ens_base import BaseModel
-from utils.ens_utils import get_config_from_file, get_pam_config, execute_command, print_message, get_real_path_pam_password, read_file
+from utils.ens_utils import get_config_from_file, get_pam_config, execute_command, print_message, read_file, get_system_name
 
 
 class AccessRightsManagement(BaseModel):
@@ -57,7 +57,14 @@ class AuthenticationMechanisms(BaseModel):
 
     def _load_system_config_file(self):
         self.config_file = get_config_from_file('/etc/login.defs', '#')
-        self.pam_commom_password_config = get_pam_config(get_real_path_pam_password(), '#')
+        self.pam_commom_password_config = get_pam_config(self.get_real_path_pam_password(), '#')
+
+    def get_real_path_pam_password(self):
+        path = '/etc/pam.d/common-password'
+        if 'red hat' in get_system_name():
+            path = '/etc/pam.d/system-auth'
+            print_message('ok', 'Sistema Red Hat detectado. Consultando /etc/pam.d/system-auth')
+        return path
 
     def _get_pass_min_days(self):
         # Días como mínimo para cambiar la contraseña
@@ -312,6 +319,7 @@ class LocalAccess(BaseModel):
                 result, description])
 
     def _check_accounts_with_uid_to_0(self):
+        # Comprobar si existe más de una cuenta super usuario
         counts_with_uid_to_0 = False
         command = """awk -F: '($3 == "0") {print}' /etc/passwd"""
         command_result = execute_command(command).splitlines()
@@ -348,9 +356,10 @@ class LocalAccess(BaseModel):
                 self._get_lock_account_root,
                 self._get_unlock_time,
                 self._check_accounts_with_uid_to_0,
+            ],
+            1: [
                 self._show_last_login_on_tty,
             ],
-            1: [],
             2: [],
         }
         self.get_max_lvl(config)
@@ -370,8 +379,9 @@ class RemoteAccess(BaseModel):
         if 'PermitRootLogin' in self.config_file and self.config_file['PermitRootLogin'] == 'no':
             root_login = False
         result = 'Correcto' if not root_login else 'Incorrecto'
+        description = 'El acceso mediante el usuario Root debe de estar desactivado'
         self.entries_to_display.append(
-            ['Acceso con usuario Root', 'Sí' if root_login else 'No', result])
+            ['Acceso con usuario Root', 'Sí' if root_login else 'No', result, description])
 
     def _get_host(self):
         # Check for not all ips
@@ -379,16 +389,18 @@ class RemoteAccess(BaseModel):
         if 'Host' in self.config_file and '*' not in self.config_file['Host']:
             host = True
         result = 'Correcto' if host else 'Incorrecto'
+        description = 'Se debe de limitar el acceso al SSH a ciertas IPs'
         self.entries_to_display.append(
-            ['Acceso restringido a IPs', 'Sí' if host else 'No', result])
+            ['Acceso restringido a IPs', 'Sí' if host else 'No', result, description])
 
     def _check_access_specific_users(self):
         usernames = False
         if 'AllowUsers' in self.config_file:
             usernames = True
         result = 'Correcto' if usernames else 'Incorrecto'
+        description = 'Se debe de restringir el acceso SSH a determinados usuarios'
         self.entries_to_display.append(
-            ['Acceso restringido a usuarios específicos', 'Sí' if usernames else 'No', result])
+            ['Acceso restringido a usuarios específicos', 'Sí' if usernames else 'No', result, description])
 
     def _get_protocol(self):
         # Default is 2,1
@@ -398,58 +410,56 @@ class RemoteAccess(BaseModel):
         if 'Protocol' in self.config_file and self.config_file['Protocol'] == protocol_values:
             protocol = True
         result = 'Correcto' if protocol else 'Incorrecto'
+        description = 'Se debe de utilizar exclusivamente la versión 2 por seguridad'
         self.entries_to_display.append(
             ['Versión de SSH usada',
                 protocol_values if protocol else '2,1',
-                result])
+                result, description])
 
     def _check_ignore_rhosts(self):
         ignore_rhost = False
         if 'IgnoreRhosts' in self.config_file and self.config_file['IgnoreRhosts'] == 'yes':
             ignore_rhost = True
         result = 'Correcto' if ignore_rhost else 'Incorrecto'
+        description = 'Se recomienda desactivar la lectura de los ficheros rhosts y shosts de los usuarios'
         self.entries_to_display.append(
-            ['Ignorar Rhosts', 'Sí' if ignore_rhost else 'No', result])
+            ['Ignorar Rhosts', 'Sí' if ignore_rhost else 'No', result, description])
 
     def _check_host_based_authentication(self):
         hostbasedauthentication = True
         if 'HostbasedAuthentication' in self.config_file and self.config_file['HostbasedAuthentication'] == 'no':
             hostbasedauthentication = False
         result = 'Correcto' if not hostbasedauthentication else 'Incorrecto'
+        description = 'Se recomienda deshabilitar la autenticación basada en host'
         self.entries_to_display.append(
-            ['Autenticación basada en host', 'Sí' if hostbasedauthentication else 'No', result])
+            ['Autenticación basada en host', 'Sí' if hostbasedauthentication else 'No', result, description])
 
     def _check_permit_empty_password(self):
         permit_empty_password = True
         if 'PermitEmptyPasswords' in self.config_file and self.config_file['PermitEmptyPasswords'] == 'no':
             permit_empty_password = False
         result = 'Correcto' if not permit_empty_password else 'Incorrecto'
+        description = 'No se debe de permitir introducir contraseñas vacías'
         self.entries_to_display.append(
-            ['Permitir contraseñas vacías', 'Sí' if permit_empty_password else 'No', result])
+            ['Permitir contraseñas vacías', 'Sí' if permit_empty_password else 'No', result, description])
 
     def _check_x11_forwarding(self):
         x11forwarding = True
         if 'X11Forwarding' in self.config_file and self.config_file['X11Forwarding'] == 'no':
             x11forwarding = False
         result = 'Correcto' if not x11forwarding else 'Incorrecto'
+        description = 'XForwarding debe de estar deshabilitado'
         self.entries_to_display.append(
-            ['Permitir X11Forwarding', 'Sí' if x11forwarding else 'No', result])
+            ['Permitir X11Forwarding', 'Sí' if x11forwarding else 'No', result, description])
 
     def _check_max_auth_retries(self):
         max_auth_retries = 0
         if 'MaxAuthTries' in self.config_file:
             max_auth_retries = self.config_file['MaxAuthTries']
         result = 'Correcto' if max_auth_retries == '5' else 'Incorrecto'
+        description = 'Se debe de limitar el número máximo de intentos fallidos'
         self.entries_to_display.append(
-            ['Número máximo de reintentos', max_auth_retries, result])
-
-    def _check_use_pam(self):
-        use_pam = False
-        if 'UsePAM' in self.config_file and self.config_file['UsePAM'] == 'yes':
-            use_pam = True
-        result = 'Correcto' if use_pam else 'Incorrecto'
-        self.entries_to_display.append(
-            ['Uso de PAM', 'Sí' if use_pam else 'No', result])
+            ['Número máximo de reintentos', max_auth_retries, result, description])
 
     def _get_public_key_authentication(self):
         # RSAAuthentication yes
@@ -461,39 +471,50 @@ class RemoteAccess(BaseModel):
                 'yes' in self.config_file['PubKeyAuthentication']:
             public_key_authentication = True
         result = 'Correcto' if public_key_authentication else 'Incorrecto'
+        description = 'Se recomienda el uso de acceso mediante clave pública/privada'
         self.entries_to_display.append(
             ['Autenticación mediante Clave Pública/Privada',
                 'Sí' if public_key_authentication else 'No',
-                result])
+                result, description])
 
     def _show_last_login(self):
         last_login = True
         if 'PrintlastLog' in self.config_file and self.config_file['PrintlastLog '] == 'no':
             last_login = False
         result = 'Correcto' if last_login else 'Incorrecto'
+        description = 'Se debe de mostrar información sobre el último logeo'
         self.entries_to_display.append(
-            ['Información del último logeo', 'Sí' if last_login else 'No', result])
+            ['Información del último logeo', 'Sí' if last_login else 'No', result, description])
 
     def get_params(self):
+        config = {}
+        self._load_system_config_file()
         print_message('ok', 'Analizando acceso remoto.')
-        config = {
-            0: [
-                self._load_system_config_file,
-                self._get_root_login,
-                self._get_host,
-                self._check_access_specific_users,
-                self._get_protocol,
-                self._check_ignore_rhosts,
-                self._check_host_based_authentication,
-                self._check_permit_empty_password,
-                self._check_x11_forwarding,
-                self._check_max_auth_retries,
-                self._check_use_pam,
-                self._get_public_key_authentication,
-                self._show_last_login,
-            ],
-            1: [],
-            2: [],
-        }
+        if not self.config_file:
+            print_message('warning', 'Fichero SSH no encontrado. Es posible que SSH Server no esté instalado')
+            config = {
+                '0': [],
+                '1': [],
+                '2': []
+            }
+        else:
+            config = {
+                0: [
+                    self._get_root_login,
+                    self._get_host,
+                    self._check_access_specific_users,
+                    self._get_protocol,
+                    self._check_ignore_rhosts,
+                    self._check_host_based_authentication,
+                    self._check_permit_empty_password,
+                    self._check_x11_forwarding,
+                    self._check_max_auth_retries,
+                ],
+                1: [
+                    self._get_public_key_authentication,
+                    self._show_last_login,
+                ],
+                2: [],
+            }
         self.get_max_lvl(config)
         print_message('ok', 'Fin de acceso remoto.')

@@ -1,2 +1,2 @@
-weasyprint==48
+weasyprint==0.42
 beautifulsoup4==4.8.0

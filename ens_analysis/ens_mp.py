@@ -4,7 +4,7 @@ from utils.ens_utils import read_file, get_config_from_file, execute_command, ch
 
 
 class WorkStationBlocking(BaseModel):
-    # MP.EQ.2 - BLoqueo del puesto de trabajo
+    # MP.EQ.2 - Bloqueo del puesto de trabajo
     title = 'MP.EQ.2 - Bloqueo del puesto de trabajo'
     entries_to_display = []
 
@@ -65,11 +65,11 @@ class WorkStationBlocking(BaseModel):
     def get_params(self):
         print_message('ok', 'Analizando bloqueo de puesto de trabajo.')
         config = {
-            0: [
+            0: [],
+            1: [
                 self._check_autologout_shell,
-                self._check_timeout_ssh
+                self._check_timeout_ssh,
             ],
-            1: [],
             2: [],
         }
         self.get_max_lvl(config)

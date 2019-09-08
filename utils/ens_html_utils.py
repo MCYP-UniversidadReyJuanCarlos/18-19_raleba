@@ -2,10 +2,11 @@
 
 from datetime import datetime
 from utils.ens_utils import execute_command, print_message
+from ens_analysis import ens_extra_data as extra_config
 from ens_analysis.ens_extra_data import OpenPortsInformation, ServicesOnBoot
 
 
-def full_html(html, score_str, nombre_usuario, nombre_organizacion, lvl_security):
+def full_html(html, score_str, nombre_usuario, nombre_organizacion, security_lvl, security_lvl_reached):
     """Generate html with ens result
 
     Args:
@@ -106,8 +107,7 @@ def full_html(html, score_str, nombre_usuario, nombre_organizacion, lvl_security
            <body style="width: 98%; margin-left: 1%">
            <br>
     """
-    full_html += get_header(nombre_organizacion, nombre_usuario, lvl_security)
-    from ens_analysis import ens_extra_data as extra_config
+    full_html += get_header(nombre_usuario, nombre_organizacion, security_lvl)
     instance = extra_config.SystemInfo()
     info_system = instance.get_html()
     full_html += info_system
@@ -133,7 +133,7 @@ def full_html(html, score_str, nombre_usuario, nombre_organizacion, lvl_security
                                            <tr></tr><tr></tr><tr></tr>
                                            <tr style="margin-top: 5px;">
                                                 <th style='padding-right: 10px; vertical-align: top; width: 30%; font-weight: bold;'>Nivel del ENS alcanzado:</th>
-                                                <th style='padding-right: 10px; vertical-align: top;'>""" + lvl_security + """</th>
+                                                <th style='padding-right: 10px; vertical-align: top;'>""" + security_lvl_reached + """</th>
                                            </tr>
                                         </tbody>
                                      </table>
@@ -157,12 +157,12 @@ def full_html(html, score_str, nombre_usuario, nombre_organizacion, lvl_security
     return full_html
 
 
-def get_header(company, user, security_lvl):
+def get_header(user, company, security_lvl):
     """Generate html with ens result
 
     Args:
-        company (str): company name
         user (str): username
+        company (str): company name
         security_lvl: security level
 
     Returns:
@@ -183,5 +183,5 @@ def get_header(company, user, security_lvl):
             </div>
         </div>
         <br>
-    """.format(system_name, company, user, security_lvl, datetime.now().strftime("%Y/%m/%d %H:%M:%S"))
+    """.format(system_name, company, user, security_lvl.capitalize(), datetime.now().strftime("%Y/%m/%d %H:%M:%S"))
     return html

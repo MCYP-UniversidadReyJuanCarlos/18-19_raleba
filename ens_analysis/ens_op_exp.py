@@ -78,34 +78,31 @@ class SecurityConfigurations(BaseModel):
                 config_data[line_splitted[0].strip()] = line_splitted[1].strip()
 
         list_properties_to_check = [
-            ('Ip Forward activo', 'net.ipv4.ip_forward', '0'),
-            ('No permitir paquetes enrutados en origen', 'net.ipv4.conf.default.accept_source_route', '0'),
-            ('SYN Cookies activadas', 'net.ipv4.tcp_syncookies', '1'),
-            ('¿Aceptar paquetes con opción SRR?', 'net.ipv4.conf.all.accept_source_route', '0'),
+            ('Ip Forward activo', 'net.ipv4.ip_forward', '0', 'Ip Forward debería de estar activo'),
+            ('No permitir paquetes enrutados en origen', 'net.ipv4.conf.default.accept_source_route', '0', 'Por seguridad no se deben de permitir paquetes enrutados en origen'),
+            ('SYN Cookies activadas', 'net.ipv4.tcp_syncookies', '1', 'SYN Cookies debe de estar activado para prevenir ataques Syn Flooding'),
+            ('¿Aceptar paquetes con opción SRR?', 'net.ipv4.conf.all.accept_source_route', '0', 'No se deben permitir los paquetes enrutados en origen'),
             ('¿Aceptar redirecciones (IPv4)? ',
-                ['net.ipv4.conf.all.accept_redirects', 'net.ipv4.conf.all.secure_redirects'], ['0', '0']),
-            ('¿Registrar paquetes con direcciones imposibles para el kernel?',
-                ['net.ipv4.conf.all.log_martians',
-                    'net.ipv4.conf.default.accept_source_route',
-                    'net.ipv4.conf.default.accept_redirects'
-                    'net.ipv4.conf.default.secure_redirects'],
-                ['1', '0', '0', '0']),
-            ('Ignorar todas las peticiones ICPM enviadas a través de broadcast/multicast', 'net.ipv4.icmp_echo_ignore_broadcasts', '1'),
-            ('Protección SYN-flood activada', 'net.ipv4.tcp_synack_retries', '5'),
-            ('Protección ante mensajes de error mal formateados', 'net.ipv4.icmp_ignore_bogus_error_responses', '1'),
-            ('RFC 1337 fix', 'net.ipv4.tcp_rfc1337', '1',),
+                ['net.ipv4.conf.all.accept_redirects', 'net.ipv4.conf.all.secure_redirects'], ['0', '0'], 'No se deben de aceptar redirecciones IPv4'),
+            ('Ignorar todas las peticiones ICPM enviadas a través de broadcast/multicast', 'net.ipv4.icmp_echo_ignore_broadcasts', '1',
+                'Se deben de ignorar todas las peticioens ICPM provenientes de broadcast/multicast'),
+            ('Protección SYN-flood activada', 'net.ipv4.tcp_synack_retries', '5', 'Se debe de limitar el tamaño máximo de syn ack'),
+            ('Protección ante mensajes de error mal formateados', 'net.ipv4.icmp_ignore_bogus_error_responses', '1',
+                'Se debe de proteger antes mensajes que estén mal formateados'),
+            ('RFC 1337 fix', 'net.ipv4.tcp_rfc1337', '1', 'Se debe de activar para aplicar el fix al RFC 1337'),
             ('Funcionamiento como router',
                 ['net.ipv4.conf.all.send_redirects',
-                    'net.ipv4.conf.default.send_redirects'], ['0', '0']),
+                    'net.ipv4.conf.default.send_redirects'], ['0', '0'], 'Se debe de evitar funcionar como router'),
             ('Reverse Path Filtering activo',
-                ['net.ipv4.conf.default.rp_filter', 'net.ipv4.conf.all.rp_filter'], ['1', '1']),
-            ('Funciones SysRq desactivadas', 'kernel.sysrq', '0'),
+                ['net.ipv4.conf.default.rp_filter', 'net.ipv4.conf.all.rp_filter'], ['1', '1'],
+                'Reverse Path Filtering debe de estar activo'),
+            ('Funciones SysRq desactivadas', 'kernel.sysrq', '0', 'Por protección sysrq debe de estar desactivado'),
             ('Protección ExecShield activa',
                 ['kernel.exec-shield', 'kernel.randomize_va_space'],
-                ['2', '2']),
-            ('Reinicio en caso de error interno del sistema', 'kernel.panic', '10'),
-            ('Protección de vulnerabilidades TOCTOU (Hardlinks)', 'fs.protected_hardlinks', '1'),
-            ('Protección de vulnerabilidades TOCTOU (Symlinks)', 'fs.protected_symlinks', '1')
+                ['2', '2'], 'La protección ExecShield debe de estar activada'),
+            ('Reinicio en caso de error interno del sistema', 'kernel.panic', '10', 'Para proteger el sistema y por seguridad, se debe de reiniciar en caso de error interno'),
+            ('Protección de vulnerabilidades TOCTOU (Hardlinks)', 'fs.protected_hardlinks', '1', 'Debe de estar activado por seguridad para el sistema'),
+            ('Protección de vulnerabilidades TOCTOU (Symlinks)', 'fs.protected_symlinks', '1', 'Debe de estar activado por seguridad para el sistema')
         ]
 
         for property in list_properties_to_check:
@@ -227,10 +224,11 @@ class ChangeManagement(BaseModel):
         print_message('ok', 'Analizando la gestión de cambios.')
         config = {
             0: [
-                self._parse_content_updates,
                 self._parse_content_firewalls,
             ],
-            1: [],
+            1: [
+                self._parse_content_updates,
+            ],
             2: [],
         }
         self.get_max_lvl(config)
@@ -281,6 +279,8 @@ class RegisterActivityLogs(BaseModel):
 
     title_8 = 'OP.EXP.8 - Registro de actividades del usuario'
     title_10 = 'OP.EXP.10 - Protección de los registros de actividad'
+    params_logs = []
+    log_permissions_parsed = []
 
     def _check_logs(self):
         self.logs = dict()
@@ -292,7 +292,6 @@ class RegisterActivityLogs(BaseModel):
         return self.logs
 
     def _parse_content_logs(self):
-        self.params_logs = []
         for log in self.logs:
             log_message = log_result = 'Correcto' if self.logs[log] else 'Incorrecto'
             self.params_logs.append([name_logs[log], log_message, log_result, description_logs[log]])
@@ -360,21 +359,26 @@ class RegisterActivityLogs(BaseModel):
         print_message('ok', 'Analizando el registro de actividades de usuario y protección de los mismos.')
         config = {
             0: [
+            ],
+            1: [
                 self._check_logs,
                 self._check_log_properties,
                 self._parse_content_logs,
                 self._parse_content_permissions,
             ],
-            1: [],
             2: [],
         }
         self.get_max_lvl(config)
         print_message('ok', 'Fin del registro de actividades de usuario y protección de los mismos.')
 
     def get_html_exp8(self):
+        if not self.params_logs:
+            return ""
         percentage = self.get_results(self.params_logs)[0]
         return self.get_html(title=self.title_8, percentage=percentage, entries=self.params_logs)
 
     def get_html_exp10(self):
+        if not self.log_permissions_parsed:
+            return ""
         percentage = self.get_results(self.log_permissions_parsed)[0]
         return self.get_html(title=self.title_10, percentage=percentage, entries=self.log_permissions_parsed)

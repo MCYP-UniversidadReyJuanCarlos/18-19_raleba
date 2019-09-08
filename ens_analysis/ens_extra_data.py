@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import sys
 
 from ens_analysis.ens_base import BaseModel
 from utils.ens_utils import get_config_from_file, execute_command
@@ -313,6 +314,9 @@ class ExtraConfigJson(BaseModel):
                 <tbody>
         """
         for config in self.list_config_parsed:
+            name = config[0]
+            if sys.version_info[0] < 3:
+                name = config[0].encode('utf-8')
             color = 'red'
             if config[1] == 'Correcto':
                 color = 'green'
@@ -321,7 +325,7 @@ class ExtraConfigJson(BaseModel):
                     <strong>{0}</strong>
                 </th><th style='padding-right: 10px; vertical-align: top; color: {2} !important'>
                     {1}
-                </th></tr>""".format(config[0], config[1], color)
+                </th></tr>""".format(name, config[1], color)
         html += """</tbody></table></div></div></div></div>"""
         return html
 
